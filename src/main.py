@@ -1,6 +1,9 @@
 import pygame
-import random
 import sys
+from src.entities.player import Player
+from src.entities.enemy import Enemy
+from src.systems.collision import check_player_collision
+from src.systems.spawning import spawn_enemies
 
 # Khởi tạo
 pygame.init()
@@ -8,42 +11,6 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Bizarre Brigade Prototype")
 clock = pygame.time.Clock()
-
-# Màu sắc
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-
-# Class Player
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.Surface((50, 50))
-        self.image.fill(WHITE)
-        self.rect = self.image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        self.speed = 5
-
-    def update(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]: self.rect.x -= self.speed
-        if keys[pygame.K_RIGHT]: self.rect.x += self.speed
-        if keys[pygame.K_UP]: self.rect.y -= self.speed
-        if keys[pygame.K_DOWN]: self.rect.y += self.speed
-        self.rect.clamp_ip(screen.get_rect())
-
-# Class Enemy
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.Surface((30, 30))
-        self.image.fill(RED)
-        self.rect = self.image.get_rect(center=(random.randint(0, SCREEN_WIDTH), 0))
-        self.speed = random.randint(1, 3)
-
-    def update(self):
-        self.rect.y += self.speed
-        if self.rect.top > SCREEN_HEIGHT:
-            self.kill()
 
 # Groups
 all_sprites = pygame.sprite.Group()
@@ -63,20 +30,14 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Spawn enemies
-    spawn_timer += 1
-    if spawn_timer > 60 // wave:  # Tăng tốc độ theo wave
-        if len(enemies) < enemies_per_wave * wave:
-            enemy = Enemy()
-            all_sprites.add(enemy)
-            enemies.add(enemy)
-            spawn_timer = 0
+    # Spawn enemies (sử dụng function)
+    spawn_timer = spawn_enemies(enemies, all_sprites, wave, enemies_per_wave, spawn_timer, SCREEN_WIDTH)
 
     # Update
     all_sprites.update()
 
-    # Collision: Player vs Enemies (kết thúc game nếu chạm)
-    if pygame.sprite.spritecollide(player, enemies, True):
+    # Collision
+    if check_player_collision(player, enemies):
         print("Game Over! Wave:", wave)
         running = False
 
@@ -86,7 +47,7 @@ while running:
         print("Wave", wave, "started!")
 
     # Draw
-    screen.fill(BLACK)
+    screen.fill((0, 0, 0))
     all_sprites.draw(screen)
     pygame.display.flip()
 
